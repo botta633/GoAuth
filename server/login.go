@@ -103,6 +103,8 @@ func NewHTTPServer(addr string) *http.Server {
 	r.HandleFunc("/infoedit", httpsrv.InfoEditProduce).Methods("POST")
 	r.HandleFunc("/infoedit", httpsrv.InfoEditConsume).Methods("GET")
 	r.HandleFunc("/info", httpsrv.InfoProduce).Methods("POST")
+	r.HandleFunc("/reset", httpsrv.ResetConsume).Methods("GET")
+	r.HandleFunc("/reset", httpsrv.ResetProduce).Methods("POST")
 
 	return &http.Server{
 		Addr:    addr,
@@ -141,7 +143,40 @@ func checkToken(w http.ResponseWriter, r *http.Request) (*http.Cookie, error) {
 	return c, nil
 
 }
+func (s *httpServer) ResetConsume(w http.ResponseWriter, r *http.Request) {
+	temp := template.Must(template.ParseFiles("../resetPassword.html"))
+	temp.Execute(w, nil)
 
+}
+func (s *httpServer) ResetProduce(w http.ResponseWriter, r *http.Request) {
+	c, err := checkToken(w, r)
+	if err != nil {
+		http.Redirect(w, r, "/signin", http.StatusSeeOther)
+		return
+	}
+
+	sessionToken := c.Value
+
+	response, err := cache.Do("GET", sessionToken)
+
+	result := fmt.Sprintf("%s", response)
+	query, _ := db.Prepare("SELECT * FROM USER WHERE EMAIL = ?;")
+
+	_, err = query.Exec(result)
+	if err != nil {
+		if err.Error()[:5] == "Error" {
+			log.Println("This email is not registered")
+			http.Redirect(w, r, "/signup", http.StatusSeeOther)
+			return
+		}
+		panic(err)
+
+	}
+
+	
+
+
+}
 func (s *httpServer) InfoEditProduce(w http.ResponseWriter, r *http.Request) {
 	c, err := checkToken(w, r)
 	if err != nil {
@@ -182,28 +217,6 @@ func (s *httpServer) InfoEditProduce(w http.ResponseWriter, r *http.Request) {
 			Telephone: r.FormValue("Telephone"),
 		}
 		res := fmt.Sprintf("%s", response)
-		/*	if data.Email != res {
-			query, err := db.Prepare("DELETE FROM USER WHERE EMAIL = ?;")
-			if err != nil {
-				panic(err)
-			}
-			query.Exec(res)
-
-			query, err = db.Prepare("INSERT INTO USER (EMAIL) VALUES (?);")
-
-			if err != nil {
-				panic(err)
-			}
-
-			query.Exec(data.Email)
-
-			_, err = cache.Do("SETEX", sessionToken, "120", data.Email)
-
-			if err != nil {
-				panic(err)
-			}
-
-		}*/
 
 		query, err := db.Prepare("UPDATE USER SET EMAIL = ?, FULLNAME = ?, TELEPHONE = ?, ADDRESS = ? WHERE EMAIL = ?;")
 

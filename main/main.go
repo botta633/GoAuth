@@ -10,10 +10,10 @@ func main() {
 	srv.InitCache()
 
 	dummyDB := srv.DBInfo{
-		UserName: "root",
-		Password: "",
-		Address:  "127.0.0.1",
-		Name:     "USERINFO",
+		UserName: "sql11471156",
+		Password: "DGbDwx2xY1",
+		Address:  "sql11.freemysqlhosting.net",
+		Name:     "sql11471156",
 		Port:     "3306",
 	}
 
